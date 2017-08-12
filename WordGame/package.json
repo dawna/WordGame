@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "express": "^4.15.4",
+    "node": "^8.2.1",
+    "unirest": "^0.5.1"
+  }
+}
