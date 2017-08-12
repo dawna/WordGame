@@ -45,10 +45,84 @@ String.prototype.shuffle = function () {
     return a.join('');
 }
 
-
-var WordSelector = React.createClass({
+var WordGuesser = React.createClass({
     frequencyList: {},
 
+    getInitialState: function () {
+        return {
+            input: '',
+            state: new Array()
+        }
+    },
+
+    handleChange(evt) {
+        this.setState({ input: evt.target.value });
+    },
+
+    handleSubmit(evt) {
+        for (var i = 0; i < this.props.letters.length; i++) {
+            if (this.frequencyList[letter] == undefined) {
+                this.frequencyList[letter] = 1;
+            } else {
+                this.frequencyList[letter] += 1;
+            }
+        }
+
+        var new_freq = {};
+        for (var i = 0; i < this.state.input.length; i++) {
+            var letter = this.state.input[i];
+
+            if (new_freq[letter] == undefined) {
+                new_freq[letter] = 1;
+            } else {
+                new_freq[letter] += 1;
+            }
+
+            if (this.frequencyList[letter] == undefined || new_freq[letter] > this.frequencyList[letter]) {
+                alert("INVALID WORD");
+                return;
+            }
+        }
+
+        var self = this;
+        $.ajax({
+            type: 'GET',
+            url: 'http://localhost:80/words/' + self.state.input,
+            contentType: 'text/plain',
+            success: function (data) {
+                if (data.body.result_code == '200') {
+                    self.state.state.push(self.state.input);
+                    self.setState({ state: self.state.state });
+                }
+
+                console.log(data);
+            },
+            xhrFields: {
+                withCredentials: false
+            },
+        });
+    },
+    render: function () {
+        var itemList = this.state.state.map(word =>
+            <li>{word}</li>
+        );
+
+        return (
+            <div>
+                <form>
+                    <label>
+                        Word:
+                        <input type="text" value={this.state.input} disabled={this.props.disabled} onChange={this.handleChange} />
+                    </label>
+                    <input type="button" value="Submit" disabled={this.props.disabled} onClick={this.handleSubmit} />
+                </form>
+                <ul>{itemList}</ul>
+            </div>
+        );
+    }
+});
+
+var WordSelector = React.createClass({
     consonantFullList: {
         str: consonants.split('').map(function (x) {
             return Array(letterDictionary[x] + 1).join(x)
@@ -64,17 +138,10 @@ var WordSelector = React.createClass({
     GenerateRandomLetter: function (letterStringContainer) {
         var letterString = letterStringContainer.str;
         letterString = letterString.shuffle();
-        alert(letterString);
         var position = Math.floor(Math.random() * 9);
         letterStringContainer.str = letterString.substring(0, position - 1) + letterString.substring(position, letterString.length);
 
         var letter = letterString[position];
-        letterString.de
-        if (this.frequencyList[letter] == undefined) {
-            this.frequencyList[letter] = 1;
-        } else {
-            this.frequencyList[letter] += 1;
-        }
         return letter;
     },
 
@@ -84,8 +151,6 @@ var WordSelector = React.createClass({
             numberOfVowels: 0,
             numberOfConsonants: 0,
             canSelect: true,
-            input: '',
-            state: new Array()
         }
     },
 
@@ -144,51 +209,7 @@ var WordSelector = React.createClass({
         });
     },
 
-    handleChange(evt) {
-        this.setState({ input: evt.target.value });
-    },
-
-    handleSubmit(evt) {
-        var new_freq = { };
-        for (var i = 0; i < this.state.input.length; i++) {
-            var letter = this.state.input[i];
-
-            if (new_freq[letter] == undefined) {
-                new_freq[letter] = 1;
-            } else {
-                new_freq[letter] += 1;
-            }
-
-            if (this.frequencyList[letter] == undefined || new_freq[letter] > this.frequencyList[letter]) {
-                alert("INVALID WORD");
-                return;
-            }
-        }
-
-        var self = this;
-        $.ajax({
-            type: 'GET',
-            url: 'http://localhost:80/words/' + self.state.input,
-            contentType: 'text/plain',
-            success: function (data) {
-                if (data.body.result_code == '200') {
-                    self.state.state.push(self.state.input);
-                    self.setState({ state: self.state.state });
-                }
-
-                console.log(data);
-            },
-            xhrFields: {
-                withCredentials: false
-            },
-        });
-    },
-
     render: function () {
-        var itemList = this.state.state.map(word =>
-            <li>{word}</li>
-        );
-
         return (
             <div>
                 <button onClick={this.selectConsonant} disabled={!this.state.canSelect}>Consonant</button>
@@ -197,14 +218,7 @@ var WordSelector = React.createClass({
                 <p className="letterCount">{this.state.numberOfVowels}</p>
                 <p>{this.state.numberOfConsonants}</p>
 
-                <form>
-                    <label>
-                        Name:
-                        <input type="text" value={this.state.input} disabled={this.state.canSelect} onChange={this.handleChange} />
-                    </label>
-                    <input type="button" value="Submit" disabled={this.state.canSelect} onClick={this.handleSubmit}/>
-                </form>
-                <ul>{itemList}</ul>
+                <WordGuesser disabled={this.state.canSelect} letters={this.state.randomizedString} />
             </div>
         );
     }
