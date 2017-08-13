@@ -45,6 +45,7 @@ String.prototype.shuffle = function () {
     return a.join('');
 }
 
+//Word picker.
 var WordGuesser = React.createClass({
     frequencyList: {},
 
@@ -60,7 +61,9 @@ var WordGuesser = React.createClass({
     },
 
     handleSubmit(evt) {
+        this.frequencyList = {};
         for (var i = 0; i < this.props.letters.length; i++) {
+            var letter = this.props.letters[i];
             if (this.frequencyList[letter] == undefined) {
                 this.frequencyList[letter] = 1;
             } else {
@@ -102,6 +105,16 @@ var WordGuesser = React.createClass({
             },
         });
     },
+
+    onTimerEndedCallback: function () {
+        this.props.onTimerEnded(this.state.state);
+        this.setState({
+            input: '',
+            state: new Array() 
+        });
+
+    },
+
     render: function () {
         var itemList = this.state.state.map(word =>
             <li>{word}</li>
@@ -109,6 +122,7 @@ var WordGuesser = React.createClass({
 
         return (
             <div>
+                <CountdownTimer disabled={this.props.disabled} onTimerEnded={this.onTimerEndedCallback} />
                 <form>
                     <label>
                         Word:
@@ -122,6 +136,7 @@ var WordGuesser = React.createClass({
     }
 });
 
+//Letter selector.
 var WordSelector = React.createClass({
     consonantFullList: {
         str: consonants.split('').map(function (x) {
@@ -150,7 +165,6 @@ var WordSelector = React.createClass({
             randomizedString: '',
             numberOfVowels: 0,
             numberOfConsonants: 0,
-            canSelect: true,
         }
     },
 
@@ -195,8 +209,11 @@ var WordSelector = React.createClass({
         console.log(this.frequencyList);
         this.setState({
             randomizedString: this.state.randomizedString += letter,
-            canSelect: !(this.state.randomizedString.length >= 9)
         });
+
+        if (this.state.randomizedString.length >= 9) {
+            this.props.onSelection(this.state.randomizedString);
+        }
     },
 
     //Selects a random vowel.
@@ -205,26 +222,123 @@ var WordSelector = React.createClass({
 
         this.setState({
             randomizedString: this.state.randomizedString += letter,
-            canSelect: !(this.state.randomizedString.length >= 9)
+        });
+
+        if (this.state.randomizedString.length >= 9) {
+            this.props.onSelection(this.state.randomizedString);
+        }
+    },
+
+    //Resets everything.
+    componentWillReceiveProps(nextProps) {
+        if (!nextProps.disabled && this.props.disabled) {
+            this.setState({
+                randomizedString: '',
+                numberOfVowels: 0,
+                numberOfConsonants: 0,
+            });
+        }
+    },
+
+    render: function () {
+        return (
+            <div>
+                <button onClick={this.selectConsonant} disabled={this.props.disabled}>Consonant</button>
+                <button onClick={this.selectVowel} disabled={this.props.disabled}>Vowel</button>
+                <div className="letters">{this.state.randomizedString}</div>
+                <p className="letterCount">{this.state.numberOfVowels}</p>
+                <p>{this.state.numberOfConsonants}</p>
+            </div>
+        );
+    }
+});
+
+//Component that is used to count down from 30 seconds.
+var CountdownTimer = React.createClass({
+    intervalListener: {},
+
+    getInitialState: function () {
+        return {
+            timer: 30
+        }
+    },
+
+    componentWillReceiveProps(nextProps) {
+        // You don't have to do this check first, but it can help prevent an unneeded render
+        if (!nextProps.disabled && this.props.disabled) {
+            this.intervalListener = setInterval(this.countdown, 1000);
+        }
+    },
+
+    countdown: function () {
+        if (this.state.timer > 0) {
+            this.state.timer--;
+        } else {
+            window.clearInterval(this.intervalListener);
+            this.state.timer = 30;
+            this.props.onTimerEnded();
+        }
+
+        this.setState({
+            timer: this.state.timer
         });
     },
 
     render: function () {
         return (
             <div>
-                <button onClick={this.selectConsonant} disabled={!this.state.canSelect}>Consonant</button>
-                <button onClick={this.selectVowel} disabled={!this.state.canSelect}>Vowel</button>
-                <div className="letters">{this.state.randomizedString}</div>
-                <p className="letterCount">{this.state.numberOfVowels}</p>
-                <p>{this.state.numberOfConsonants}</p>
-
-                <WordGuesser disabled={this.state.canSelect} letters={this.state.randomizedString} />
+                {this.state.timer}
             </div>
         );
     }
 });
 
+//Parent component for countdown letters game.
+var Countdown = React.createClass({
+
+    getInitialState: function () {
+        return {
+            disableSelectWords: true,
+            disableSelectLetters: false,
+            stringProblem: ''
+        }
+    },
+
+    onSelectWordsCallback: function (randomString) {
+        this.setState({
+            disableSelectWords: false,
+            disableSelectLetters: true,
+            stringProblem: randomString
+        });
+    },
+
+    //Retrieves a list of answers from the users.
+    onTimeEndedCallback: function (answers) {
+        var largest = '';
+        for (var i = 0; i < answers.length; i++) {
+            if (largest.length < answers[i].length) {
+                largest = answers[i];
+            }
+        }
+
+        alert(largest + ' ' + largest.length);
+        this.setState({
+            disableSelectLetters: false,
+            disableSelectWords: true
+        });
+    },
+
+    render: function () {
+        return (
+            <div>
+                <WordSelector disabled={this.state.disableSelectLetters} onSelection={this.onSelectWordsCallback} />
+                <WordGuesser disabled={this.state.disableSelectWords} letters={this.state.stringProblem} onTimerEnded={this.onTimeEndedCallback} />
+            </div>
+        );
+    }
+})
+
 ReactDOM.render(
-    <WordSelector letterCount={9} />,
+    <Countdown />,
     document.getElementById("container")
 );
