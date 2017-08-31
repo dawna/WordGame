@@ -122,7 +122,7 @@ var WordGuesser = React.createClass({
 
         return (
             <div>
-                <CountdownTimer disabled={this.props.disabled} onTimerEnded={this.onTimerEndedCallback} />
+                <CountdownTimer disabled={this.props.disabled} onTimerEnded={this.onTimerEndedCallback} size={200} />
                 <form>
                     <label>
                         Word:
@@ -265,14 +265,15 @@ var CountdownTimer = React.createClass({
 
     componentWillReceiveProps(nextProps) {
         // You don't have to do this check first, but it can help prevent an unneeded render
+        var step = 50;
         if (!nextProps.disabled && this.props.disabled) {
-            this.intervalListener = setInterval(this.countdown, 1000);
+            this.intervalListener = setInterval(this.countdown, step);
         }
     },
 
     countdown: function () {
         if (this.state.timer > 0) {
-            this.state.timer--;
+            this.state.timer = this.state.timer - 50 / 1000.0;
         } else {
             window.clearInterval(this.intervalListener);
             this.state.timer = 30;
@@ -285,9 +286,41 @@ var CountdownTimer = React.createClass({
     },
 
     render: function () {
+        var size = this.props.size;
+        var radius = this.props.size / 2.0;
+        var angle = 0;
+        var lines = <line x1={size} y1={size} x2={rotX} y2={rotY} stroke="black" strokeWidth={5} />;
+        var li = []
+
+        for (var i = 0; i < 12; i++) {
+            angle = angle + 30 * (Math.PI / 180.0);
+            var x2 = radius - 80 * Math.sin(angle);
+            var y2 = radius - 80 * Math.cos(angle);
+            var x1 = radius - 60 * Math.sin(angle);
+            var y1 = radius - 60 * Math.cos(angle);
+
+            var color = "black";
+            if (i == 5 || i == 11) {
+                color = "red";
+            }
+
+            li.push(<line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={2} />)
+        }
+
+        var theta = (30 - this.state.timer) * 6 * -(Math.PI / 180);
+        var rotX = radius - 80 * Math.sin(theta);
+        var rotY = radius - 80 * Math.cos(theta);
+
         return (
             <div>
-                {this.state.timer}
+                <svg height={size} width={size} >
+                    <circle cx={radius} cy={radius} r={radius} fill="black" />
+                    <circle cx={radius} cy={radius} r={radius - 10} fill="white" />
+                    <circle cx={radius} cy={radius} r={7} fill="black" />
+                    {li}
+                    <line x1={radius} y1={radius} x2={rotX} y2={rotY} stroke="black" strokeWidth={5} />
+                </svg>
+                <p/>
             </div>
         );
     }
