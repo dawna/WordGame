@@ -87,6 +87,7 @@ var WordGuesser = React.createClass({
             }
         }
 
+        ////Call to server.
         var self = this;
         $.ajax({
             type: 'GET',
