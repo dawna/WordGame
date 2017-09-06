@@ -16,33 +16,44 @@ var WordGuesser = React.createClass({
     },
 
     handleSubmit(evt) {
-        this.frequencyList = {};
-        for (var i = 0; i < this.props.letters.length; i++) {
-            var letter = this.props.letters[i];
-            if (this.frequencyList[letter] == undefined) {
-                this.frequencyList[letter] = 1;
+        //Do client-side validation.
+        //this.frequencyList = {};
+        //for (var i = 0; i < this.props.letters.length; i++) {
+        //    var letter = this.props.letters[i];
+        //    if (this.frequencyList[letter] == undefined) {
+        //        this.frequencyList[letter] = 1;
+        //    } else {
+        //        this.frequencyList[letter] += 1;
+        //    }
+        //}
+
+        //var new_freq = {};
+        //for (var i = 0; i < this.state.input.length; i++) {
+        //    var letter = this.state.input[i];
+
+        //    if (new_freq[letter] == undefined) {
+        //        new_freq[letter] = 1;
+        //    } else {
+        //        new_freq[letter] += 1;
+        //    }
+
+        //    if (this.frequencyList[letter] == undefined || new_freq[letter] > this.frequencyList[letter]) {
+        //        alert("INVALID WORD");
+        //        return;
+        //    }
+        //}
+
+        submitWord(this.state.input, (success) => {
+            if (success) {
+                this.state.state.push(this.state.input);
+                alert(this.state.state);
+                this.setState({
+                    state: this.state.state
+                });
             } else {
-                this.frequencyList[letter] += 1;
+                alert("Word doesn't exist");
             }
-        }
-
-        var new_freq = {};
-        for (var i = 0; i < this.state.input.length; i++) {
-            var letter = this.state.input[i];
-
-            if (new_freq[letter] == undefined) {
-                new_freq[letter] = 1;
-            } else {
-                new_freq[letter] += 1;
-            }
-
-            if (this.frequencyList[letter] == undefined || new_freq[letter] > this.frequencyList[letter]) {
-                alert("INVALID WORD");
-                return;
-            }
-        }
-
-        socket.emit('submit');
+        });
     },
 
     onTimerEndedCallback: function () {

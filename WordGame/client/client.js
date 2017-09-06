@@ -17,3 +17,11 @@ function pickLetter(typeOfLetter, func) {
         func(word);
     });
 }
+
+function submitWord(word, func) {
+    socket.emit('submit', { word: word });
+
+    socket.on('submitResult', function (success) {
+        func(success);
+    });
+}

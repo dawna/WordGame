@@ -1,6 +1,7 @@
 ﻿var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var unirest = require('unirest');
 
 //Fisher-Yates Shuffle algorithm.
 String.prototype.shuffle = function () {
@@ -15,30 +16,6 @@ String.prototype.shuffle = function () {
     }
     return a.join('');
 }
-
-function ValidateWord(word) {
-
-    var self = this;
-    $.ajax({
-        type: 'GET',
-        url: 'http://localhost:80/words/' + word,
-        contentType: 'text/plain',
-        success: function (data) {
-            if (data.body.result_code == '200') {
-                //Write to client that word is successful.  Add word to list.
-            }
-
-            console.log(data);
-        },
-        xhrFields: {
-            withCredentials: false
-        },
-    });
-}
-
-//app.get('/', function (req, res) {
-//    res.sendfile('C:/Users/adamd/Documents/Visual Studio 2017/Projects/WordGame/WordGame/index.html');
-//});
 
 //Whenever someone connects this gets executed
 io.on('connection', function (socket) {
@@ -122,13 +99,24 @@ io.on('connection', function (socket) {
     socket.on('consonant', function () {
         numberOfConsonants++;
         var letter = GenerateRandomLetter(consonantFullList);
-        vowelFullList = consonantFullList.replace(letter, '');
+        consonantFullList = consonantFullList.replace(letter, '');
         console.log(letter);
 
         HandleLetter(letter);
     });
 
-    socket.on('submit', function () {
+    socket.on('submit', function (req) {
+        var word = req.word;
+        console.log(word);
+
+        unirest.get("https://twinword-word-graph-dictionary.p.mashape.com/association/?entry=" + word)
+            .header("X-Mashape-Key", "yqdeu5JvRWmshaDoHTQwkYj2snoVp1ULVudjsnWI2jtYY6FbqW")
+            .header("Accept", "application/json")
+            .end(function (result) {
+                console.log(result.status, result.headers, result.body);
+                var success = result.body.result_code == '200';
+                socket.emit("submitResult", success);
+            });
     });
 });
 
