@@ -14,6 +14,10 @@ function pickLetter(typeOfLetter) {
     }
 }
 
+function resetGame() {
+    socket.emit('reset');
+}
+
 function retrieveWordEvent(func) {
     socket.on('currentWord', function (word) {
         func(word);

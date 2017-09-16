@@ -234,6 +234,8 @@ var Countdown = React.createClass({
             }
         }
 
+        resetGame();
+
         alert(largest + ' ' + largest.length);
         this.setState({
             disableSelectLetters: false,

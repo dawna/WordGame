@@ -2,6 +2,22 @@
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var unirest = require('unirest');
+var pg = require('pg');
+
+var connectionString = 'postgres://localhost/worddb';
+
+var pool = new pg.Pool({
+    user: 'postgres',
+    host: 'localhost',
+    database: 'worddb',
+    password: '****',
+    port: 5432
+});
+
+pool.on('error', (err, client) => {
+    console.error('Unexpected error on idle client', err)
+    process.exit(-1)
+})
 
 //Fisher-Yates Shuffle algorithm.
 String.prototype.shuffle = function () {
@@ -50,11 +66,32 @@ io.on('connection', function (socket) {
     };
 
     var vowels = 'aeiou';
-    var currentString = '';
     var consonants = 'bcdfghjklmnpqrstvwxyz';
 
     var numberOfVowels = 0;
     var numberOfConsonants = 0;
+
+    var currentString = '';
+
+    var vowelFullList = '';
+    var consonantFullList = '';
+
+    Initialize = function () {
+        numberOfVowels = 0;
+        numberOfConsonants = 0;
+
+        currentString = '';
+
+        vowelFullList = vowels.split('').map(function (x) {
+            return Array(letterDictionary[x] + 1).join(x)
+        }).join('');
+
+        consonantFullList = consonants.split('').map(function (x) {
+            return Array(letterDictionary[x] + 1).join(x)
+        }).join('');
+
+        console.log('Resetting game');
+    }
 
     GenerateRandomLetter = function (letterString) {
         letterString = letterString.shuffle();
@@ -66,20 +103,13 @@ io.on('connection', function (socket) {
     HandleLetter = function (letter) {
         currentString += letter;
         if (currentString.length >= 8) {
+            socket.emit('currentWord', currentString);
             socket.emit('complete_letter_pick', { word: currentString });
             console.log('complete');
         } else {
             socket.emit('currentWord', currentString);
         }
     }
-
-    vowelFullList = vowels.split('').map(function (x) {
-        return Array(letterDictionary[x] + 1).join(x)
-    }).join('');
-
-    consonantFullList = consonants.split('').map(function (x) {
-        return Array(letterDictionary[x] + 1).join(x)
-    }).join('');
 
     console.log('A user connected');
     //Whenever someone disconnects this piece of code executed
@@ -109,17 +139,26 @@ io.on('connection', function (socket) {
         var word = req.word;
         console.log(word);
 
-        unirest.get("https://twinword-word-graph-dictionary.p.mashape.com/association/?entry=" + word)
-            .header("X-Mashape-Key", "yqdeu5JvRWmshaDoHTQwkYj2snoVp1ULVudjsnWI2jtYY6FbqW")
-            .header("Accept", "application/json")
-            .header("Access-Control-Allow-Origin", "*")
-            .header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-            .end(function (result) {
-                console.log(result.status, result.headers, result.body);
-                var success = result.body.result_code == '200';
-                socket.emit("submitResult", success);
-            });
+        pool.query('SELECT * FROM words WHERE lower(word) = $1', [word], (err, res) => {
+            if (err) {
+                throw err
+            }
+            console.log("Result ", res.rows[0]);
+
+            socket.emit("submitResult", res.rows[0]);
+        });
     });
+
+    socket.on('reset', function () {
+        Initialize();
+    });
+
+    Initialize();
+});
+
+io.on('exit', function () {
+    console.log('Process exit');
+    pool.end();
 });
 
 http.listen(3000, function () {
