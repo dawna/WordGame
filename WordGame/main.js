@@ -138,7 +138,7 @@ var WordGuesser = React.createClass({
 });
 
 //Letter selector.
-var WordSelector = React.createClass({
+var LetterSelector = React.createClass({
     consonantFullList: {
         str: consonants.split('').map(function (x) {
             return Array(letterDictionary[x] + 1).join(x)
@@ -365,7 +365,7 @@ var Countdown = React.createClass({
     render: function () {
         return (
             <div>
-                <WordSelector disabled={this.state.disableSelectLetters} onSelection={this.onSelectWordsCallback} />
+                <LetterSelector disabled={this.state.disableSelectLetters} onSelection={this.onSelectWordsCallback} />
                 <WordGuesser disabled={this.state.disableSelectWords} letters={this.state.stringProblem} onTimerEnded={this.onTimeEndedCallback} />
             </div>
         );

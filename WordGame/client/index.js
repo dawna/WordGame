@@ -1,10 +1,21 @@
-﻿//var client = require('./client');
-
-//Word picker.
+﻿//Word picker.
 var WordGuesser = React.createClass({
     frequencyList: {},
 
     getInitialState: function () {
+
+        retrieveWordOnSuccessEvent((success) => {
+            if (success) {
+                this.state.state.push(this.state.input);
+                alert(this.state.state);
+                this.setState({
+                    state: this.state.state
+                });
+            } else {
+                alert("Word doesn't exist");
+            }
+        });
+
         return {
             input: '',
             state: new Array()
@@ -43,17 +54,7 @@ var WordGuesser = React.createClass({
         //    }
         //}
 
-        submitWord(this.state.input, (success) => {
-            if (success) {
-                this.state.state.push(this.state.input);
-                alert(this.state.state);
-                this.setState({
-                    state: this.state.state
-                });
-            } else {
-                alert("Word doesn't exist");
-            }
-        });
+        submitWord(this.state.input);
     },
 
     onTimerEndedCallback: function () {
@@ -86,24 +87,25 @@ var WordGuesser = React.createClass({
     }
 });
 
-var WordSelector = React.createClass({
+var LetterSelector = React.createClass({
 
     getInitialState: function () {
+
+        retrieveWordEvent((word) => this.setState({ randomizedString: word }));
+
         return {
             randomizedString: '',
-            //numberOfVowels: 0,
-            //numberOfConsonants: 0,
         }
     },
     //Selects a random consonant.
     selectConsonant: function (evt) {
-        pickLetter('consonant', (word) => this.setState({ randomizedString: word }));
+        pickLetter('consonant');
         this.props.onSelection();
     },
 
     //Selects a random vowel.
     selectVowel: function (evt) {
-        pickLetter('vowel', (word) => this.setState({ randomizedString: word }));
+        pickLetter('vowel');
         this.props.onSelection();
     },
 
@@ -204,6 +206,15 @@ var CountdownTimer = React.createClass({
 var Countdown = React.createClass({
 
     getInitialState: function () {
+
+        wordFinishedEvent((word) => {
+            this.setState({
+                stringProblem: word,
+                disableSelectLetters: true,
+                disableSelectWords: false
+            });
+        });
+
         return {
             disableSelectWords: true,
             disableSelectLetters: false,
@@ -211,15 +222,8 @@ var Countdown = React.createClass({
         }
     },
 
-    onSelectWordsCallback: function () {
-        wordFinished((word) => {
-            this.setState({
-                stringProblem: word,
-                disableSelectLetters: true,
-                disableSelectWords: false
-            });
-        });
-    },
+    //onSelectWordsCallback: function () {
+    //},
 
     //Retrieves a list of answers from the users.
     onTimeEndedCallback: function (answers) {
@@ -237,13 +241,13 @@ var Countdown = React.createClass({
         });
     },
 
-    disableSelector: function () {
-    },
+    //disableSelector: function () {
+    //},
 
     render: function () {
         return (
             <div>
-                <WordSelector disabled={this.state.disableSelectLetters} onSelection={this.onSelectWordsCallback} />
+                <LetterSelector disabled={this.state.disableSelectLetters} onSelection={this.onSelectWordsCallback} />
                 <WordGuesser disabled={this.state.disableSelectWords} letters={this.state.stringProblem} onTimerEnded={this.onTimeEndedCallback} />
             </div>
         );

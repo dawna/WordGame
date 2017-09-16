@@ -112,6 +112,8 @@ io.on('connection', function (socket) {
         unirest.get("https://twinword-word-graph-dictionary.p.mashape.com/association/?entry=" + word)
             .header("X-Mashape-Key", "yqdeu5JvRWmshaDoHTQwkYj2snoVp1ULVudjsnWI2jtYY6FbqW")
             .header("Accept", "application/json")
+            .header("Access-Control-Allow-Origin", "*")
+            .header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
             .end(function (result) {
                 console.log(result.status, result.headers, result.body);
                 var success = result.body.result_code == '200';
